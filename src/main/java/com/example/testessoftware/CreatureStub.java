@@ -1,11 +1,11 @@
 package com.example.testessoftware;
 
-class CreatureStub extends Creature {
+class CreatureStub extends Criatura {
     public CreatureStub(int id) {
         super(id);
     }
 
     @Override
-    public void move() {
+    public void mover() {
     }
 }
