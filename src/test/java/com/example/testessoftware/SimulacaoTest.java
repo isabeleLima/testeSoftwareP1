@@ -25,7 +25,7 @@ public class SimulacaoTest {
       Criatura c = list.get(i);
       assertEquals(i + 1, c.getId());
       assertEquals(1_000_000, c.getMoedas());
-      assertEquals(0, c.getPosition(), 0.0001);
+      assertEquals(0, c.getPosicao(), 0.0001);
     }
   }
 
