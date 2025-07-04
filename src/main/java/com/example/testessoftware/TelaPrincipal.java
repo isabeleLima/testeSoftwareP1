@@ -7,13 +7,13 @@ public class TelaPrincipal extends JFrame {
     private GerenciadorUsuarios gerenciador;
     private Usuario usuarioLogado;
     private JLabel lblBemVindo;
-    private JButton btnSimular, btnSair, btnEstatisticas;
+    private JButton btnSimular, btnSair, btnEstatisticas, btnRemoverMinhaConta, btnRemoverOutroUtilizador;
 
     public TelaPrincipal(GerenciadorUsuarios gerenciador, Usuario usuario) {
         this.gerenciador = gerenciador;
         this.usuarioLogado = usuario;
 
-        setTitle("Simulação - Usuário: " + usuario.getLogin());
+        setTitle("Simulação - Utilizador: " + usuario.getLogin());
         setSize(900, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -32,33 +32,97 @@ public class TelaPrincipal extends JFrame {
         JPanel botoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnSimular = new JButton("Iniciar nova simulação");
         btnEstatisticas = new JButton("Mostrar Estatísticas");
+        btnRemoverMinhaConta = new JButton("Remover Minha Conta");
+        btnRemoverOutroUtilizador = new JButton("Remover Outro Utilizador");
         btnSair = new JButton("Sair");
+
+        btnRemoverMinhaConta.setBackground(new Color(220, 53, 69));
+        btnRemoverMinhaConta.setForeground(Color.WHITE);
+        btnRemoverOutroUtilizador.setBackground(new Color(108, 117, 125));
+        btnRemoverOutroUtilizador.setForeground(Color.WHITE);
 
         botoes.add(btnSimular);
         botoes.add(btnEstatisticas);
+        botoes.add(btnRemoverMinhaConta);
+        botoes.add(btnRemoverOutroUtilizador);
         botoes.add(btnSair);
 
         add(botoes, BorderLayout.SOUTH);
 
-        // Espaço para futuro painel (ex: lista de usuários ou logs)
         add(new JPanel(), BorderLayout.CENTER);
 
         // Listeners
         btnSimular.addActionListener(e -> iniciarSimulacaoComVisualizacao());
 
         btnEstatisticas.addActionListener(e -> {
-            EstatisticasSimulacao estatisticas = new EstatisticasSimulacao();
-            for (Usuario u : gerenciador.getTodosUsuarios().values()) {
-                estatisticas.registrarSimulacao(u, false);
-            }
-            TelaEstatisticas telaEst = new TelaEstatisticas(gerenciador.getTodosUsuarios().values(), estatisticas);
+            EstatisticasService service = new EstatisticasService(gerenciador);
+            EstatisticasSimulacao dadosEstatisticos = service.getEstatisticasAtuais();
+            TelaEstatisticas telaEst = new TelaEstatisticas(dadosEstatisticos);
             telaEst.setVisible(true);
         });
+
+        btnRemoverMinhaConta.addActionListener(e -> removerContaPropria());
+
+        btnRemoverOutroUtilizador.addActionListener(e -> removerOutroUtilizador());
 
         btnSair.addActionListener(e -> {
             new TelaLogin(gerenciador).setVisible(true);
             this.dispose();
         });
+    }
+
+    private void removerContaPropria() {
+        int resposta = JOptionPane.showConfirmDialog(
+                this,
+                "Tem a certeza que deseja remover permanentemente a sua conta?\nEsta ação não pode ser desfeita.",
+                "Confirmar Remoção de Conta",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (resposta == JOptionPane.YES_OPTION) {
+            boolean removido = gerenciador.removerUsuario(usuarioLogado.getLogin());
+            if (removido) {
+                JOptionPane.showMessageDialog(this, "Conta removida com sucesso.", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                new TelaLogin(gerenciador).setVisible(true);
+                this.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Ocorreu um erro ao remover a sua conta.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void removerOutroUtilizador() {
+        String loginParaRemover = JOptionPane.showInputDialog(
+                this,
+                "Digite o login do utilizador que deseja remover:",
+                "Remover Outro Utilizador",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (loginParaRemover != null && !loginParaRemover.trim().isEmpty()) {
+            if (loginParaRemover.equals(usuarioLogado.getLogin())) {
+                JOptionPane.showMessageDialog(this, "Para remover a sua própria conta, utilize o botão 'Remover Minha Conta'.", "Ação Inválida", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int resposta = JOptionPane.showConfirmDialog(
+                    this,
+                    "Tem a certeza que deseja remover permanentemente o utilizador '" + loginParaRemover + "'?",
+                    "Confirmar Remoção",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+
+            if (resposta == JOptionPane.YES_OPTION) {
+                boolean removido = gerenciador.removerUsuario(loginParaRemover);
+                if (removido) {
+                    JOptionPane.showMessageDialog(this, "Utilizador '" + loginParaRemover + "' removido com sucesso.", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Utilizador não encontrado ou ocorreu um erro ao remover.", "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
     }
 
     private void iniciarSimulacaoComVisualizacao() {
@@ -102,10 +166,10 @@ public class TelaPrincipal extends JFrame {
                     JOptionPane.showMessageDialog(telaSimulacao, "Simulação finalizada sem sucesso.", "Resultado", JOptionPane.WARNING_MESSAGE);
                 }
 
-                gerenciador.salvarUsuarios();
+                gerenciador.registrarResultadoSimulacao(usuarioLogado, sucesso[0]);
 
-                telaSimulacao.dispose();   // Fecha a janela da simulação
-                this.toFront();            // (Opcional) traz a tela principal para frente
+                telaSimulacao.dispose();
+                this.toFront();
             });
         }).start();
     }

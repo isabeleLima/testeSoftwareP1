@@ -2,37 +2,45 @@ package com.example.testessoftware;
 
 import java.util.Collection;
 
+/**
+ * Um Data Transfer Object (DTO) para armazenar um snapshot consolidado
+ * das estatísticas da simulação.
+ */
 public class EstatisticasSimulacao {
-    private int totalSimulacoes = 0;
-    private int totalSucessos = 0;
+    private final int totalSimulacoesGlobais;
+    private final int totalSucessosGlobais;
+    private final Collection<Usuario> usuarios;
 
-    public void registrarSimulacao(Usuario usuario, boolean sucesso) {
-        totalSimulacoes++;
-        usuario.incrementarTotal();
-        if (sucesso) {
-            totalSucessos++;
-            usuario.incrementarSucesso();
-        }
+    public EstatisticasSimulacao(int totalSimulacoesGlobais, int totalSucessosGlobais, Collection<Usuario> usuarios) {
+        this.totalSimulacoesGlobais = totalSimulacoesGlobais;
+        this.totalSucessosGlobais = totalSucessosGlobais;
+        this.usuarios = usuarios;
     }
 
-    public int getTotalSimulacoes() {
-        return totalSimulacoes;
-    }
+    // Getters para acessar os dados
+    public int getTotalSimulacoesGlobais() { return totalSimulacoesGlobais; }
+    public int getTotalSucessosGlobais() { return totalSucessosGlobais; }
+    public Collection<Usuario> getUsuarios() { return usuarios; }
 
-    public int getTotalSucessos() {
-        return totalSucessos;
-    }
+    /**
+     * Calcula a média de simulações bem-sucedidas por utilizador.
+     */
+    public double getMediaSucessosPorUsuario() {
+        if (usuarios == null || usuarios.isEmpty()) return 0.0;
 
-    public double getMediaSucessosPorUsuario(Collection<Usuario> usuarios) {
-        if (usuarios.isEmpty()) return 0.0;
-        int soma = 0;
+        double somaSucessos = 0;
         for (Usuario u : usuarios) {
-            soma += u.getSimulacoesBemSucedidas();
+            somaSucessos += u.getSimulacoesBemSucedidas();
         }
-        return (double) soma / usuarios.size();
+        return somaSucessos / usuarios.size();
     }
 
+    /**
+     * Calcula a taxa percentual de sucesso global.
+     */
     public double getTaxaSucessoGlobal() {
-        return totalSimulacoes == 0 ? 0.0 : (double) totalSucessos / totalSimulacoes;
+        if (totalSimulacoesGlobais == 0) return 0.0;
+
+        return ((double) totalSucessosGlobais / totalSimulacoesGlobais) * 100;
     }
 }
