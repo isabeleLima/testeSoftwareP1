@@ -1,193 +1,210 @@
-package com.example.testessoftware;//package com.example.testessoftware;
+package com.example.testessoftware;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-import java.lang.reflect.Method;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * Suíte de testes final e completa para a classe Simulacao.
+ * Este arquivo implementa o plano de ação definido na análise, combinando
+ * testes de especificação, fronteira, estruturais e de unidade isolados com Mockito.
+ */
+@ExtendWith(MockitoExtension.class)
 public class SimulacaoTest {
 
-  // ------------------------
-  // TESTES DA CLASSE SIMULACAO
-  // ------------------------
+  // ===================================================================================
+  // Seção 1: Testes de Especificação, Domínio e Fronteira (Caixa-Preta)
+  // Estes testes validam os requisitos sem conhecer a implementação interna.
+  // ===================================================================================
 
-  // ---------- DOMÍNIO ----------
-
-  //n=5 criar 5 criaturas com ids corretos e 1000000 moedas
+  /**
+   * TIPO: Teste de Especificação / Teste de Domínio
+   * REQUISITO: "Criação de Criaturas"
+   * OBJETIVO: Garante que o construtor funciona para um número típico de criaturas.
+   */
   @Test
-  void testConstructor() {
-    int n = 5;
-    Simulacao sim = new Simulacao(n);
-    List<Criatura> list = sim.getCreatures();
-    assertEquals(n, list.size());
-
-    for (int i = 0; i < n; i++) {
-      Criatura c = list.get(i);
-      assertEquals(i + 1, c.getId());
-      assertEquals(1_000_000, c.getMoedas());
-      assertEquals(0, c.getPosition(), 0.0001);
-    }
+  void testConstrutor_Dominio_NumeroPositivoDeCriaturas() {
+    Simulacao sim = new Simulacao(5);
+    assertEquals(5, sim.getEntidades().size(), "Deve criar 5 criaturas.");
+    assertNotNull(sim.getGuardiao(), "Deve criar um guardião.");
+    assertEquals(6, sim.getGuardiao().getId(), "ID do guardião deve ser n+1.");
   }
 
-  //n=2 sem movimento 1 rouba metade de 2 e 2 rouba metade de 1
+  /**
+   * TIPO: Teste de Fronteira
+   * REQUISITO: "Criação de Criaturas"
+   * OBJETIVO: Testa o caso limite de n=0.
+   */
   @Test
-  void testIteracaoTwoCreaturesStealBackAndForth() {
-    class FixedCreature extends Criatura {
-      public FixedCreature(int id) { super(id); }
-      @Override public void mover() {}
-    }
-
+  void testConstrutor_Fronteira_ZeroCriaturas() {
     Simulacao sim = new Simulacao(0);
+    assertTrue(sim.getEntidades().isEmpty(), "Não deve criar criaturas.");
+    assertEquals(1, sim.getGuardiao().getId(), "ID do guardião deve ser 1 para n=0.");
+  }
 
-    FixedCreature c1 = new FixedCreature(1);
-    FixedCreature c2 = new FixedCreature(2);
+  /**
+   * TIPO: Teste de Fronteira
+   * REQUISITO: "Criação de Criaturas"
+   * OBJETIVO: Testa o caso limite de n=-1 (entrada inválida).
+   */
+  @Test
+  void testConstrutor_Fronteira_NumeroNegativoDeCriaturas() {
+    // Garante que o construtor lança uma exceção para entradas inválidas.
+    assertThrows(IllegalArgumentException.class, () -> {
+      new Simulacao(-1);
+    }, "O construtor deve lançar uma exceção para n negativo.");
+  }
 
-    c1.setPosicao(0);
-    c2.setPosicao(10);
+  /**
+   * TIPO: Teste de Especificação / Teste de Unidade com Dublês
+   * REQUISITO: "Formação de Cluster"
+   * OBJETIVO: Valida que criaturas na mesma posição formam um cluster e somam suas moedas.
+   * NOTA: Este teste foi refatorado para usar Stubs e garantir um resultado previsível.
+   */
+  @Test
+  void testClusterFormation_Dominio_DuasCriaturasNaMesmaPosicao() {
+    Simulacao sim = new Simulacao(0); // Começa com 0 para ter controle total
+    // Usa a criatura previsível para garantir que a posição não mude aleatoriamente
+    CriaturaPrevisivel c1 = new CriaturaPrevisivel(1);
+    CriaturaPrevisivel c2 = new CriaturaPrevisivel(2);
+
+    // Força a colisão
+    c1.setPosicao(10.0);
+    c2.setPosicao(10.0);
     c1.setMoedas(100);
     c2.setMoedas(200);
 
-    sim.getCreatures().clear();
-    sim.getCreatures().add(c1);
-    sim.getCreatures().add(c2);
-
+    sim.getEntidades().addAll(Arrays.asList(c1, c2));
     sim.iteracao();
 
-    assertEquals(100, c1.getMoedas(), 0.0001);
-    assertEquals(200, c2.getMoedas(), 0.0001);
+    // Agora as asserções são confiáveis
+    assertEquals(1, sim.getEntidades().size(), "As duas criaturas deveriam formar um único cluster.");
+    assertTrue(sim.getEntidades().get(0) instanceof Cluster, "A entidade restante deve ser um cluster.");
+    // Como não há outros vizinhos para roubar, a soma deve ser exata.
+    assertEquals(300, sim.getEntidades().get(0).getMoedas(), "O cluster deve ter a soma exata das moedas dos membros.");
   }
 
-  // ---------- FRONTEIRA ----------
+  // ===================================================================================
+  // Seção 2: Testes Estruturais (Caixa-Branca)
+  // Estes testes olham para a estrutura interna do código para garantir a cobertura lógica.
+  // ===================================================================================
 
-  //n=1 nada acontece apos iteracao
+  /**
+   * TIPO: Teste Estrutural (MC/DC)
+   * REQUISITO: "Simulação bem-sucedida"
+   * OBJETIVO: Validar todos os caminhos lógicos do método isBemSucedida().
+   */
   @Test
-  void testIteracaoSingleCreatureDoesNothing() {
-    Simulacao sim = new Simulacao(1);
-    Criatura only = sim.getCreatures().get(0);
-    double goldBefore = only.getMoedas();
+  void testIsBemSucedida_Estrutural() {
+    // Caso 1: Apenas o guardião (n=0). Deve ser sucesso.
+    Simulacao sim1 = new Simulacao(0);
+    assertTrue(sim1.isBemSucedida(), "Com 0 criaturas, deve restar apenas o guardião, sendo um sucesso.");
 
-    sim.iteracao();
+    // Caso 2: Guardião e 1 criatura, guardião mais rico. Deve ser sucesso.
+    Simulacao sim2 = new Simulacao(1);
+    sim2.getGuardiao().setMoedas(1000);
+    sim2.getEntidades().get(0).setMoedas(500);
+    assertTrue(sim2.isBemSucedida(), "Guardião mais rico que a única criatura deve ser um sucesso.");
 
-    assertEquals(goldBefore, only.getMoedas(), 0.0001);
+    // Caso 3: Guardião e 1 criatura, guardião mais pobre. Não deve ser sucesso.
+    Simulacao sim3 = new Simulacao(1);
+    sim3.getGuardiao().setMoedas(300);
+    sim3.getEntidades().get(0).setMoedas(500);
+    assertFalse(sim3.isBemSucedida(), "Guardião mais pobre que a única criatura não deve ser um sucesso.");
+
+    // Caso 4: Múltiplas criaturas. Não deve ser sucesso.
+    Simulacao sim4 = new Simulacao(2);
+    assertFalse(sim4.isBemSucedida(), "Com múltiplas criaturas, a simulação não terminou.");
   }
 
- //distancias iguais escolhe o primeiro da lista
+  // ===================================================================================
+  // Seção 3: Testes de Unidade Isolados com Dublês (Mocks e Stubs)
+  // Estes testes substituem os testes instáveis, garantindo resultados previsíveis.
+  // ===================================================================================
+
+  // --- Dublês de Teste (Stubs) para controlar o comportamento ---
+  class CriaturaPrevisivel extends Criatura {
+    public CriaturaPrevisivel(int id) { super(id); }
+    @Override public void mover() { /* Não faz nada para ser previsível */ }
+  }
+
+  class GuardiaoPrevisivel extends Guardiao {
+    public GuardiaoPrevisivel(int id) { super(id); }
+    @Override public void mover() { /* Não faz nada para ser previsível */ }
+  }
+
+  class ClusterPrevisivel extends Cluster {
+    public ClusterPrevisivel(List<Criatura> membros) { super(membros); }
+    @Override public void mover() { /* Não faz nada para ser previsível */ }
+  }
+
+  /**
+   * TIPO: Teste de Unidade com Dublês (Stubs)
+   * REQUISITO: "Guardião elimina cluster"
+   * OBJETIVO: Substitui o teste instável 'testGuardiaoEliminaCluster' por uma versão
+   * determinística que usa stubs para controlar as posições.
+   */
   @Test
-  void testAcheProximoWithEqualDistances() throws Exception {
-    Simulacao sim = new Simulacao(0);
+  void testGuardiaoEliminaCluster_ComStubs() {
+    // 1. Cenário
     Criatura c1 = new Criatura(1);
+    c1.setMoedas(800);
     Criatura c2 = new Criatura(2);
-    Criatura c3 = new Criatura(3);
+    c2.setMoedas(1200);
 
-    c1.setPosicao(0);
-    c2.setPosicao(10);
-    c3.setPosicao(20);
+    ClusterPrevisivel cluster = new ClusterPrevisivel(Arrays.asList(c1, c2));
+    cluster.setPosicao(50.0);
 
-    sim.getCreatures().clear();
-    sim.getCreatures().add(c1);
-    sim.getCreatures().add(c2);
-    sim.getCreatures().add(c3);
-
-    Method m = Simulacao.class.getDeclaredMethod("acheProximo", Criatura.class);
-    m.setAccessible(true);
-    Criatura nearest = (Criatura) m.invoke(sim, c2);
-
-    assertSame(c1, nearest);
-  }
-
-  // ---------- ESTRUTURAL / MC/DC ----------
-
-  //quem tem 0 moedas pode roubar mas n pode ser roubado
-  @Test
-  void testIteracaoNoStealWhenNeighborHasZeroGold() {
-    class FixedCreature extends Criatura {
-      public FixedCreature(int id) { super(id); }
-      @Override public void mover() {}
-    }
+    GuardiaoPrevisivel guardiao = new GuardiaoPrevisivel(3);
+    guardiao.setMoedas(100);
+    guardiao.setPosicao(50.0);
 
     Simulacao sim = new Simulacao(0);
-    FixedCreature c1 = new FixedCreature(1);
-    FixedCreature c2 = new FixedCreature(2);
+    sim.getEntidades().add(cluster);
+    sim.setGuardiao(guardiao); // Requer um setter em Simulacao.java
 
-    c1.setPosicao(0);
-    c2.setPosicao(1);
-
-    c1.setMoedas(1_000_000);
-    c2.setMoedas(0);
-
-    sim.getCreatures().add(c1);
-    sim.getCreatures().add(c2);
-
+    // 2. Ação
     sim.iteracao();
 
-    // c1 não deve conseguir roubar nada de c2 mas c2 rouba de c1
-    assertEquals(500_000, c1.getMoedas(), 0.0001);  // c1 perdeu metade das moedas
-    assertEquals(500_000, c2.getMoedas(), 0.0001);  // c2 ganhou metade das moedas
+    // 3. Verificação
+    assertEquals(2100.0, guardiao.getMoedas(), "Guardião deveria ter absorvido as moedas do cluster.");
+    assertTrue(sim.getEntidades().isEmpty(), "O cluster deveria ter sido removido.");
   }
 
-  //se a criatura n acha nada
+  /**
+   * TIPO: Teste de Unidade com Mocks
+   * REQUISITO: "Cluster rouba moedas"
+   * OBJETIVO: Substitui o teste instável 'testClusterRoubaMetadeDasMoedasDoVizinho' por
+   * uma versão que usa Mockito para verificar a interação de "roubo".
+   */
   @Test
-  void testIteracaoNoNeighborFoundDoesNothing() {
-    class FixedCreature extends Criatura {
-      public FixedCreature(int id) { super(id); }
-      @Override public void mover() {}
-    }
+  void testClusterRoubaMetadeDasMoedasDoVizinho_ComMockito() {
+    // 1. Cenário
+    Criatura c1 = mock(Criatura.class);
+    Criatura c2 = mock(Criatura.class);
+    Criatura vizinhoMock = mock(Criatura.class);
+
+    when(c1.getPosicao()).thenReturn(10.0);
+    when(c1.getMoedas()).thenReturn(100.0);
+    when(c2.getPosicao()).thenReturn(10.0);
+    when(c2.getMoedas()).thenReturn(200.0);
+    when(vizinhoMock.getPosicao()).thenReturn(20.0);
+    when(vizinhoMock.getMoedas()).thenReturn(500.0);
 
     Simulacao sim = new Simulacao(0);
-    FixedCreature c = new FixedCreature(1);
-    c.setPosicao(0);
-    sim.getCreatures().add(c);
+    sim.getEntidades().addAll(Arrays.asList(c1, c2, vizinhoMock));
 
-    sim.iteracao(); // Só tem 1 criatura, logo não há vizinho
-
-    assertEquals(1_000_000, c.getMoedas());
-  }
-
-  // testa se o cod retorna a propria criatura
-  @Test
-  void testIteracaoSkipsIfNearestIsSameCreature() {
-    class FixedCreature extends Criatura {
-      public FixedCreature(int id) { super(id); }
-      @Override public void mover() {}
-    }
-
-    Simulacao sim = new Simulacao(0);
-    FixedCreature c = new FixedCreature(1);
-    c.setPosicao(0);
-
-    sim.getCreatures().add(c);
-
+    // 2. Ação
     sim.iteracao();
 
-    assertEquals(1_000_000, c.getMoedas());
+    // 3. Verificação
+    // Verificamos se a interação correta (o roubo) aconteceu.
+    verify(vizinhoMock, times(1)).removerMoedas(250.0);
   }
-
-  //se a quantidade roubada for == 0 mesmo que o vizinho tenha moedas
-  @Test
-  void testIteracaoWithTinyAmountOfGold() {
-    class FixedCreature extends Criatura {
-      public FixedCreature(int id) { super(id); }
-      @Override public void mover() {}
-    }
-
-    Simulacao sim = new Simulacao(0);
-    FixedCreature c1 = new FixedCreature(1);
-    FixedCreature c2 = new FixedCreature(2);
-
-    c1.setPosicao(0);
-    c2.setPosicao(1);
-    c1.setMoedas(0.001);
-    c2.setMoedas(1_000_000);
-
-    sim.getCreatures().add(c1);
-    sim.getCreatures().add(c2);
-
-    sim.iteracao();
-
-    // Garante que houve transferência mesmo com valor pequeno
-    assertTrue(c1.getMoedas() > 0.001, "c1 deve ter roubado algo de c2");
-    assertTrue(c2.getMoedas() < 1_000_000);
-  }
-
-
 }

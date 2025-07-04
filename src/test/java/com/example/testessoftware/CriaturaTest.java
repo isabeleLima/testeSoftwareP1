@@ -18,7 +18,7 @@ public class CriaturaTest {
         Criatura c = new Criatura(5);
         assertEquals(5, c.getId());
         assertEquals(1_000_000, c.getMoedas());
-        assertEquals(0, c.getPosition(), 0.0001);
+        assertEquals(0, c.getPosicao(), 0.0001);
     }
 
     //add moedas
@@ -73,9 +73,9 @@ public class CriaturaTest {
     void testMoveWithZeroGold() {
         Criatura c = new Criatura(1);
         c.setMoedas(0);
-        double posBefore = c.getPosition();
+        double posBefore = c.getPosicao();
         c.mover();
-        assertEquals(posBefore, c.getPosition(), 0.0001, "Com 0 ouro, a posição não muda");
+        assertEquals(posBefore, c.getPosicao(), 0.0001, "Com 0 ouro, a posição não muda");
     }
 
     // ---------- ESTRUTURAL / MC/DC ----------
@@ -84,9 +84,9 @@ public class CriaturaTest {
     @Test
     void testMoveRandomlyChangesPosition() {
         Criatura c = new Criatura(1);
-        double before = c.getPosition();
+        double before = c.getPosicao();
         c.mover(); // aleatório
-        double after = c.getPosition();
+        double after = c.getPosicao();
 
         assertNotEquals(before, after, "A posição deve mudar após o movimento");
         double delta = Math.abs(after - before);
@@ -104,7 +104,7 @@ public class CriaturaTest {
 
         assertEquals(99, c.getId());
         assertEquals(123_456, c.getMoedas());
-        assertEquals(7.89, c.getPosition(), 0.0001);
+        assertEquals(7.89, c.getPosicao(), 0.0001);
     }
 
     //testar add moedas negativas

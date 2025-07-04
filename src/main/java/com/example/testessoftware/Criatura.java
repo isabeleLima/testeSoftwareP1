@@ -1,9 +1,9 @@
 package com.example.testessoftware;
 
 public class Criatura {
-    private int id;
-    private double posicao;
-    private double moedas;
+    protected int id;
+    protected double posicao;
+    protected double moedas;
 
     public Criatura(int id) {
         this.id = id;
@@ -19,7 +19,7 @@ public class Criatura {
         this.id = id;
     }
 
-    public double getPosition() {
+    public double getPosicao() {
         return posicao;
     }
 
