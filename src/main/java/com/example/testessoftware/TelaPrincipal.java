@@ -1,12 +1,20 @@
 package com.example.testessoftware;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
 public class TelaPrincipal extends JFrame {
     private GerenciadorUsuarios gerenciador;
     private Usuario usuarioLogado;
+
     private JLabel lblBemVindo;
+    private JLabel lblFotoPerfil;
+    private JLabel lblBemVindoFoto;
+
     private JButton btnSimular, btnSair, btnEstatisticas, btnRemoverMinhaConta, btnRemoverOutroUtilizador;
 
     public TelaPrincipal(GerenciadorUsuarios gerenciador, Usuario usuario) {
@@ -21,13 +29,32 @@ public class TelaPrincipal extends JFrame {
     }
 
     private void initComponents() {
-        // Usar BorderLayout para o frame principal
         setLayout(new BorderLayout(10, 10));
+
         JPanel topo = new JPanel(new FlowLayout(FlowLayout.LEFT));
         lblBemVindo = new JLabel("Bem-vindo, " + usuarioLogado.getLogin());
         lblBemVindo.setFont(new Font("Arial", Font.BOLD, 18));
         topo.add(lblBemVindo);
         add(topo, BorderLayout.NORTH);
+
+        JPanel painelPerfil = new JPanel();
+        painelPerfil.setLayout(new BoxLayout(painelPerfil, BoxLayout.Y_AXIS));
+        painelPerfil.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        painelPerfil.setOpaque(false);
+        painelPerfil.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        lblFotoPerfil = new JLabel();
+        lblFotoPerfil.setAlignmentX(Component.CENTER_ALIGNMENT);
+        ImageIcon iconeFoto = carregarFotoPerfil(usuarioLogado.getAvatar());
+        lblFotoPerfil.setIcon(iconeFoto);
+
+        lblBemVindoFoto = new JLabel("Bem-vindo");
+        lblBemVindoFoto.setFont(new Font("Arial", Font.BOLD, 16));
+        lblBemVindoFoto.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblBemVindoFoto.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+
+        painelPerfil.add(lblFotoPerfil);
+        painelPerfil.add(lblBemVindoFoto);
 
         JPanel botoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnSimular = new JButton("Iniciar nova simulação");
@@ -41,17 +68,25 @@ public class TelaPrincipal extends JFrame {
         btnRemoverOutroUtilizador.setBackground(new Color(108, 117, 125));
         btnRemoverOutroUtilizador.setForeground(Color.WHITE);
 
+        if (!"admin".equalsIgnoreCase(usuarioLogado.getLogin())) {
+            btnRemoverOutroUtilizador.setVisible(false);
+        }
+
         botoes.add(btnSimular);
         botoes.add(btnEstatisticas);
         botoes.add(btnRemoverMinhaConta);
         botoes.add(btnRemoverOutroUtilizador);
         botoes.add(btnSair);
 
-        add(botoes, BorderLayout.SOUTH);
+        JPanel painelCentro = new JPanel();
+        painelCentro.setLayout(new BorderLayout());
+        painelCentro.add(painelPerfil, BorderLayout.NORTH);
+        painelCentro.add(botoes, BorderLayout.SOUTH);
+
+        add(painelCentro, BorderLayout.SOUTH);
 
         add(new JPanel(), BorderLayout.CENTER);
 
-        // Listeners
         btnSimular.addActionListener(e -> iniciarSimulacaoComVisualizacao());
 
         btnEstatisticas.addActionListener(e -> {
@@ -69,6 +104,22 @@ public class TelaPrincipal extends JFrame {
             new TelaLogin(gerenciador).setVisible(true);
             this.dispose();
         });
+    }
+
+    private ImageIcon carregarFotoPerfil(String caminhoAvatar) {
+        try {
+            File arquivo = new File(caminhoAvatar);
+            if (!arquivo.exists()) {
+                arquivo = new File("default_avatar.png");
+                if (!arquivo.exists()) return null;
+            }
+            BufferedImage img = ImageIO.read(arquivo);
+            Image imgRed = img.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            return new ImageIcon(imgRed);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private void removerContaPropria() {
@@ -126,24 +177,61 @@ public class TelaPrincipal extends JFrame {
     }
 
     private void iniciarSimulacaoComVisualizacao() {
-        SimulacaoSempreVencedora simulacao = new SimulacaoSempreVencedora(5);
+        JTextField campoCriaturas = new JTextField();
+        JTextField campoRepeticoes = new JTextField();
+        Object[] mensagem = {
+                "Quantidade de criaturas (máx. 20):", campoCriaturas,
+                "Quantidade de repetições (máx. 1000):", campoRepeticoes
+        };
+
+        int opcao = JOptionPane.showConfirmDialog(
+                this,
+                mensagem,
+                "Configurar Simulação",
+                JOptionPane.OK_CANCEL_OPTION
+        );
+
+        if (opcao != JOptionPane.OK_OPTION) return;
+
+        int criaturas, repeticoes;
+        try {
+            criaturas = Integer.parseInt(campoCriaturas.getText().trim());
+            repeticoes = Integer.parseInt(campoRepeticoes.getText().trim());
+            if (criaturas > 20 || repeticoes > 1000 || criaturas < 1 || repeticoes < 1) {
+                throw new NumberFormatException();
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Valores inválidos. Máximo: 20 criaturas e 1000 repetições.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        Simulacao simulacao = new Simulacao(criaturas);
         SimulacaoPainel painelVisual = new SimulacaoPainel();
         painelVisual.setEntidades(simulacao.getEntidades());
 
-        final JFrame telaSimulacao = new JFrame("Visualização da Simulação"); // final para lambda
+        JLabel lblRepeticao = new JLabel("Repetição: 0 de " + repeticoes);
+        lblRepeticao.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JPanel painelPrincipal = new JPanel(new BorderLayout());
+        painelPrincipal.add(lblRepeticao, BorderLayout.NORTH);
+        painelPrincipal.add(painelVisual, BorderLayout.CENTER);
+
+        final JFrame telaSimulacao = new JFrame("Visualização da Simulação");
         telaSimulacao.setSize(800, 500);
         telaSimulacao.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         telaSimulacao.setLocationRelativeTo(this);
-        telaSimulacao.add(painelVisual);
+        telaSimulacao.add(painelPrincipal);
         telaSimulacao.setVisible(true);
 
         new Thread(() -> {
-            final boolean[] sucesso = {false};  // wrapper para mutabilidade dentro do lambda
+            final boolean[] sucesso = {false};
 
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < repeticoes; i++) {
+                final int atual = i + 1;
                 simulacao.iteracao();
                 painelVisual.setEntidades(simulacao.getEntidades());
                 painelVisual.repaint();
+                lblRepeticao.setText("Repetição: " + atual + " de " + repeticoes);
 
                 if (simulacao.isBemSucedida()) {
                     sucesso[0] = true;
@@ -151,7 +239,7 @@ public class TelaPrincipal extends JFrame {
                 }
 
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(300);
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
