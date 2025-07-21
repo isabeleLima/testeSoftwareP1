@@ -1,5 +1,9 @@
-package com.example.testessoftware;
+package com.example.testessoftware.dubles;
 
+import com.example.testessoftware.Cluster;
+import com.example.testessoftware.Criatura;
+import com.example.testessoftware.Guardiao;
+import com.example.testessoftware.Simulacao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;

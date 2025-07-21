@@ -1,5 +1,9 @@
-package com.example.testessoftware;
+package com.example.testessoftware.dominio;
 
+import com.example.testessoftware.Cluster;
+import com.example.testessoftware.Criatura;
+import com.example.testessoftware.Guardiao;
+import com.example.testessoftware.Simulacao;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -206,5 +210,38 @@ public class SimulacaoTest {
     // 3. Verificação
     // Verificamos se a interação correta (o roubo) aconteceu.
     verify(vizinhoMock, times(1)).removerMoedas(250.0);
+  }
+
+  /**
+   * TIPO: Teste Estrutural (Caixa-Branca)
+   * OBJETIVO: Validar todos os caminhos lógicos do método isBemSucedida()
+   * para atingir 100% de cobertura de Decisão e MC/DC.
+   *
+   * Condições a serem testadas em isBemSucedida():
+   * C1: entidades.isEmpty()
+   * C2: entidades.size() == 1
+   * C3: guardiao.getMoedas() > entidades.get(0).getMoedas()
+   */
+  @Test
+  void testIsBemSucedida_CoberturaEstrutural() {
+    // Caso 1: Testa C1 = true. Atinge o primeiro `return true`.
+    Simulacao sim1 = new Simulacao(0);
+    assertTrue(sim1.isBemSucedida(), "C1=true: Deve ser sucesso com 0 criaturas.");
+
+    // Caso 2: Testa C2=true, C3=true. Atinge o segundo `return true`.
+    Simulacao sim2 = new Simulacao(1);
+    sim2.getGuardiao().setMoedas(1000);
+    sim2.getEntidades().get(0).setMoedas(500);
+    assertTrue(sim2.isBemSucedida(), "C2=true, C3=true: Sucesso, guardião mais rico.");
+
+    // Caso 3: Testa C2=true, C3=false. Atinge o `return false` implícito da segunda condição.
+    Simulacao sim3 = new Simulacao(1);
+    sim3.getGuardiao().setMoedas(300);
+    sim3.getEntidades().get(0).setMoedas(500);
+    assertFalse(sim3.isBemSucedida(), "C2=true, C3=false: Falha, guardião mais pobre.");
+
+    // Caso 4: Testa C1=false, C2=false. Atinge o `return false` final.
+    Simulacao sim4 = new Simulacao(2);
+    assertFalse(sim4.isBemSucedida(), "C1=false, C2=false: Falha, múltiplas criaturas.");
   }
 }

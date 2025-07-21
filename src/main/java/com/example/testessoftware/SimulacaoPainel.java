@@ -27,11 +27,12 @@ public class SimulacaoPainel extends JPanel {
 
         g2.setFont(new Font("Arial", Font.BOLD, 14));
 
-        // Exibir legenda com espaçamento maior
+        // --- LEGENDA ---
         int xTexto = 10;
         int yTexto = 20;
-        int espacamento = 100; // espaçamento entre legendas
+        int espacamento = 120;
 
+        // Percorre a lista que AGORA CONTÉM O GUARDIÃO
         for (int i = 0; i < entidades.size(); i++) {
             Criatura c = entidades.get(i);
 
@@ -45,14 +46,14 @@ public class SimulacaoPainel extends JPanel {
                 g2.setColor(Color.BLUE);
                 g2.drawString("C" + c.getId() + ": " + (int) c.getMoedas(), xTexto, yTexto);
             }
-
             xTexto += espacamento;
         }
 
-        // Desenhar entidades com cores e tamanhos conforme pedido
+        // --- DESENHO DAS ENTIDADES ---
         for (int i = 0; i < entidades.size(); i++) {
             Criatura c = entidades.get(i);
 
+            // Define a cor baseada no tipo de entidade
             if (c instanceof Guardiao) {
                 g2.setColor(Color.GREEN);
             } else if (c instanceof Cluster) {
@@ -61,16 +62,16 @@ public class SimulacaoPainel extends JPanel {
                 g2.setColor(Color.BLUE);
             }
 
+            // Lógica de posição e tamanho (permanece a mesma)
             double posicaoArredondada = Math.round(c.getPosicao() / 1000.0) * 1000.0;
-            int x = (int) (width / 2 + posicaoArredondada / 10000.0);
-            int y = height / 2;
+            int x = (int) (width / 2 + c.getPosicao() / 20000.0);
 
+            // ---------------------------------------------
+
+            int y = height / 2;
             int base = 10;
             int max = 60;
-            int tamanho = (int) (base + c.getMoedas() / 100_000);
-            tamanho = Math.min(max, tamanho);
-            tamanho = Math.min(max, tamanho);
-
+            int tamanho = Math.min(max, base + (int) (c.getMoedas() / 100_000));
             g2.fillOval(x - tamanho / 2, y - tamanho / 2, tamanho, tamanho);
 
             if (c instanceof Cluster) {

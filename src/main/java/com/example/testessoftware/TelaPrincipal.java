@@ -207,7 +207,7 @@ public class TelaPrincipal extends JFrame {
 
         Simulacao simulacao = new Simulacao(criaturas);
         SimulacaoPainel painelVisual = new SimulacaoPainel();
-        painelVisual.setEntidades(simulacao.getEntidades());
+        painelVisual.setEntidades(simulacao.getTodasAsEntidadesVisiveis());
 
         JLabel lblRepeticao = new JLabel("Repetição: 0 de " + repeticoes);
         lblRepeticao.setHorizontalAlignment(SwingConstants.CENTER);
@@ -229,7 +229,7 @@ public class TelaPrincipal extends JFrame {
             for (int i = 0; i < repeticoes; i++) {
                 final int atual = i + 1;
                 simulacao.iteracao();
-                painelVisual.setEntidades(simulacao.getEntidades());
+                painelVisual.setEntidades(simulacao.getTodasAsEntidadesVisiveis());
                 painelVisual.repaint();
                 lblRepeticao.setText("Repetição: " + atual + " de " + repeticoes);
 

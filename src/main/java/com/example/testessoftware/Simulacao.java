@@ -20,6 +20,19 @@ public class Simulacao {
         this.guardiao = new Guardiao(n + 1);
     }
 
+    public List<Criatura> getTodasAsEntidadesVisiveis() {
+        // Cria uma nova lista contendo todas as entidades atuais (criaturas e clusters)
+        List<Criatura> todas = new ArrayList<>(this.entidades);
+
+        // Adiciona o guardião a essa lista
+        if (this.guardiao != null) {
+            todas.add(this.guardiao);
+        }
+
+        // Retorna a lista completa para o painel de desenho
+        return todas;
+    }
+
     // Método principal com a lógica corrigida e simplificada
     public void iteracao() {
         // 1. Mover todas as criaturas (exceto o guardião, que se move depois)

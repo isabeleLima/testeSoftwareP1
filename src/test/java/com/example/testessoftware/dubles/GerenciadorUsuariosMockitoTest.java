@@ -1,5 +1,7 @@
-package com.example.testessoftware;
+package com.example.testessoftware.dubles;
 
+import com.example.testessoftware.GerenciadorUsuarios;
+import com.example.testessoftware.Usuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
